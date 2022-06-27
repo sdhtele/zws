@@ -373,14 +373,12 @@ def bot_sys_stats():
                 num_split += 1
     stats = f"Bot Statistics"
     stats += f"""
-
 Bot Uptime: {currentTime}
 T-DN: {recv} | T-UP: {sent}
 CPU: {cpu}% | RAM: {mem}%
 Disk: {total} | Free: {free}
 Used: [{disk}%] is {used}
-
-Made with ❤️ by Dawn
+Made with ❤️ by Sx
 """
     return stats
 dispatcher.add_handler(
