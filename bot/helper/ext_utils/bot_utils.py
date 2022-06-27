@@ -378,7 +378,7 @@ T-DN: {recv} | T-UP: {sent}
 CPU: {cpu}% | RAM: {mem}%
 Disk: {total} | Free: {free}
 Used: [{disk}%] is {used}
-Made with ❤️ by Dawn
+Made with ❤️ by Sx
 """
     return stats
 dispatcher.add_handler(
