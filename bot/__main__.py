@@ -7,7 +7,7 @@ from sys import executable
 from telegram import InlineKeyboardMarkup
 from telegram.ext import CommandHandler
 
-from bot import bot, dispatcher, updater, botStartTime, IGNORE_PENDING_REQUESTS, LOGGER, Interval, INCOMPLETE_TASK_NOTIFIER, DB_URI, app, main_loop
+from bot import bot, dispatcher, updater, botStartTime, IGNORE_PENDING_REQUESTS, LOGGER, Interval, INCOMPLETE_TASK_NOTIFIER, DB_URI, alive, app, main_loop
 from .helper.ext_utils.fs_utils import start_cleanup, clean_all, exit_clean_up
 from .helper.ext_utils.telegraph_helper import telegraph
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time
@@ -44,7 +44,6 @@ def stats(update, context):
     mem_t = get_readable_file_size(memory.total)
     mem_a = get_readable_file_size(memory.available)
     mem_u = get_readable_file_size(memory.used)
-
     stats = f'<b>Commit Date:</b> {last_commit}\n'\
             f'<b>Bot Uptime:</b> {currentTime}\n'\
             f'<b>OS Uptime:</b> {osUptime}\n'\
@@ -61,22 +60,21 @@ def stats(update, context):
             f'<b>Memory Total:</b> {mem_t}\n'\
             f'<b>Memory Free:</b> {mem_a}\n'\
             f'<b>Memory Used:</b> {mem_u}\n'
-
     sendMessage(stats, context.bot, update.message)
 
 
 def start(update, context):
     buttons = ButtonMaker()
-
+    
     buttons.buildbutton("Donate", "https://t.me/jwhoo_le")
     buttons.buildbutton("Repo", "https://github.com")
     buttons.buildbutton("Group", "https://t.me/sxrips")
     buttons.buildbutton("Owner", "https://t.me/jwhoo_le")
-
+    
     reply_markup = InlineKeyboardMarkup(buttons.build_menu(2))
     if CustomFilters.authorized_user(update) or CustomFilters.authorized_chat(update):
         start_string = f'''
-Welcome | Sx Mirror service is ready for you
+Welcome | Z Mirror service is ready for you
 Type /{BotCommands.HelpCommand} to get a list of available commands
 '''
         sendMarkup(start_string, context.bot, update.message, reply_markup)
@@ -87,10 +85,11 @@ def restart(update, context):
     restart_message = sendMessage("Restarting...", context.bot, update.message)
     if Interval:
         Interval[0].cancel()
+    alive.kill()
     clean_all()
-    srun(["pkill", "-f", "gunicorn|aria2c|qbittorrent-nox"])
+    srun(["pkill", "-9", "-f", "gunicorn|extra-api|last-api|megasdkrest|new-api"])
     srun(["python3", "update.py"])
-    with open(".restartmsg", "w") as f:
+    with open(".restartmsg", "w") as f: 
         f.truncate(0)
         f.write(f"{restart_message.chat.id}\n{restart_message.message_id}\n")
     osexecl(executable, executable, "-m", "bot")
@@ -176,7 +175,7 @@ help_string_telegraph = f'''<br>
 '''
 
 help = telegraph.create_page(
-        title='Sx-Bot Help',
+        title='SX-Mirror-Bot Help',
         content=help_string_telegraph,
     )["path"]
 
@@ -196,10 +195,6 @@ help_string = f'''
 /{BotCommands.RestartCommand}: Restart and update the bot
 
 /{BotCommands.LogCommand}: Get a log file of the bot. Handy for getting crash reports
-
-/{BotCommands.ShellCommand}: Run commands in Shell (Only Owner)
-
-/{BotCommands.ExecHelpCommand}: Get help for Executor module (Only Owner)
 '''
 
 def bot_help(update, context):
@@ -208,42 +203,7 @@ def bot_help(update, context):
     reply_markup = InlineKeyboardMarkup(button.build_menu(1))
     sendMarkup(help_string, context.bot, update.message, reply_markup)
 
-botcmds = [
-
-        (f'{BotCommands.MirrorCommand}', 'Mirror'),
-        (f'{BotCommands.ZipMirrorCommand}','Mirror and upload as zip'),
-        (f'{BotCommands.UnzipMirrorCommand}','Mirror and extract files'),
-        (f'{BotCommands.QbMirrorCommand}','Mirror torrent using qBittorrent'),
-        (f'{BotCommands.QbZipMirrorCommand}','Mirror torrent and upload as zip using qb'),
-        (f'{BotCommands.QbUnzipMirrorCommand}','Mirror torrent and extract files using qb'),
-        (f'{BotCommands.WatchCommand}','Mirror yt-dlp supported link'),
-        (f'{BotCommands.ZipWatchCommand}','Mirror yt-dlp supported link as zip'),
-        (f'{BotCommands.CloneCommand}','Copy file/folder to Drive'),
-        (f'{BotCommands.LeechCommand}','Leech'),
-        (f'{BotCommands.ZipLeechCommand}','Leech and upload as zip'),
-        (f'{BotCommands.UnzipLeechCommand}','Leech and extract files'),
-        (f'{BotCommands.QbLeechCommand}','Leech torrent using qBittorrent'),
-        (f'{BotCommands.QbZipLeechCommand}','Leech torrent and upload as zip using qb'),
-        (f'{BotCommands.QbUnzipLeechCommand}','Leech torrent and extract using qb'),
-        (f'{BotCommands.LeechWatchCommand}','Leech yt-dlp supported link'),
-        (f'{BotCommands.LeechZipWatchCommand}','Leech yt-dlp supported link as zip'),
-        (f'{BotCommands.CountCommand}','Count file/folder of Drive'),
-        (f'{BotCommands.DeleteCommand}','Delete file/folder from Drive'),
-        (f'{BotCommands.CancelMirror}','Cancel a task'),
-        (f'{BotCommands.CancelAllCommand}','Cancel all downloading tasks'),
-        (f'{BotCommands.ListCommand}','Search in Drive'),
-        (f'{BotCommands.LeechSetCommand}','Leech settings'),
-        (f'{BotCommands.SetThumbCommand}','Set thumbnail'),
-        (f'{BotCommands.StatusCommand}','Get mirror status message'),
-        (f'{BotCommands.StatsCommand}','Bot usage stats'),
-        (f'{BotCommands.PingCommand}','Ping the bot'),
-        (f'{BotCommands.RestartCommand}','Restart the bot'),
-        (f'{BotCommands.LogCommand}','Get the bot Log'),
-        (f'{BotCommands.HelpCommand}','Get detailed help')
-    ]
-
 def main():
-     bot.set_my_commands(botcmds)
     start_cleanup()
     if INCOMPLETE_TASK_NOTIFIER and DB_URI is not None:
         notifier_dict = DbManger().get_incomplete_tasks()
