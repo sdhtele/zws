@@ -7,11 +7,9 @@ from psutil import virtual_memory, cpu_percent, disk_usage
 from requests import head as rhead
 from urllib.request import urlopen
 from telegram import InlineKeyboardMarkup
-
-from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot import download_dict, download_dict_lock, STATUS_LIMIT, botStartTime, DOWNLOAD_DIR
+from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
-
 import shutil
 import psutil
 from telegram.error import RetryAfter
@@ -27,7 +25,6 @@ URL_REGEX = r"(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+"
 COUNT = 0
 PAGE_NO = 1
 
-
 class MirrorStatus:
     STATUS_UPLOADING = "Uploading...📤"
     STATUS_DOWNLOADING = "Downloading...📥"
@@ -40,21 +37,21 @@ class MirrorStatus:
     STATUS_SPLITTING = "Splitting...✂️"
     STATUS_CHECKING = "CheckingUp...📝"
     STATUS_SEEDING = "Seeding...🌧"
-    
+
 class EngineStatus:
     STATUS_ARIA = "Aria2c v1.35.0"
     STATUS_GD = "Google Api v2.51.0"
     STATUS_MEGA = "MegaSDK v3.12.0"
-    STATUS_QB = "qBittorrent v4.3.9"
+    STATUS_QB = "qBittorrent v4.4.2"
     STATUS_TG = "Pyrogram v2.0.27"
     STATUS_YT = "YT-dlp v22.5.18"
-    STATUS_EXT = "Extract | pExtract"
+    STATUS_EXT = "pExtract"
     STATUS_SPLIT = "FFmpeg v2.9.1"
     STATUS_ZIP = "p7zip v16.02"
 
 PROGRESS_MAX_SIZE = 100 // 9
-PROGRESS_INCOMPLETE = ['◔', '◔', '◑', '◑', '◑', '◕', '◕']
-    
+PROGRESS_INCOMPLETE = ['◌', '◌', '◎', '◎', '◎', '◍', '◍', '◍']
+
 SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
 
 
@@ -129,11 +126,11 @@ def get_progress_bar_string(status):
     p = min(max(p, 0), 100)
     cFull = p // 8
     cPart = p % 8 - 1
-    p_str = '●' * cFull
+    p_str = '◉' * cFull
     if cPart >= 0:
         p_str += PROGRESS_INCOMPLETE[cPart]
     p_str += '○' * (PROGRESS_MAX_SIZE - cFull)
-    p_str = f"「{p_str}」"
+    p_str = f"⠧{p_str}⠹"
     return p_str
 
 def get_readable_message():
@@ -210,13 +207,13 @@ def get_readable_message():
                 elif 'MB/s' in spd:
                     upspeed_bytes += float(spd.split('M')[0]) * 1048576
         bmsg += f"\n<b>DN:</b> {get_readable_file_size(dlspeed_bytes)}/s<b> | UP:</b> {get_readable_file_size(upspeed_bytes)}/s"
-        
+
         buttons = ButtonMaker()
         buttons.sbutton("Statistics", str(THREE))
         sbutton = InlineKeyboardMarkup(buttons.build_menu(1))
-        
+
         if STATUS_LIMIT is not None and tasks > STATUS_LIMIT:
-            msg += f"<b>Tasks:</b> {tasks}\n"
+            msg += f"\n<b>Total Tasks:</b> {tasks}\n"
             buttons = ButtonMaker()
             buttons.sbutton("Prev", "status pre")
             buttons.sbutton(f"{PAGE_NO}/{pages}", str(THREE))
@@ -276,25 +273,8 @@ def is_gdtot_link(url: str):
     url = re_match(r'https?://.+\.gdtot\.\S+', url)
     return bool(url)
 
-def is_unified_link(url: str):
-    url1 = re_match(r'https?://(anidrive|driveroot|driveflix|indidrive|drivehub)\.in/\S+', url)
-    url = re_match(r'https?://(appdrive|driveapp|driveace|gdflix|drivelinks|drivebit|drivesharer|drivepro)\.\S+', url)
-    if bool(url1) == True:
-        return bool(url1)
-    elif bool(url) == True:
-        return bool(url)
-    else:
-        return False
-
-def is_udrive_link(url: str):
-    if 'drivehub.ws' in url:
-        return 'drivehub.ws' in url
-    else:
-        url = re_match(r'https?://(hubdrive|katdrive|kolop|drivefire|drivebuzz)\.\S+', url)
-        return bool(url)
-
-def is_sharer_link(url: str):
-    url = re_match(r'https?://(sharer)\.pw/\S+', url)
+def is_appdrive_link(url: str):
+    url = re_match(r'https?://(?:\S*\.)?(?:appdrive|driveapp)\.in/\S+', url)
     return bool(url)
 
 def is_mega_link(url: str):
@@ -371,16 +351,18 @@ def bot_sys_stats():
                 num_extract += 1
        if stats.status() == MirrorStatus.STATUS_SPLITTING:
                 num_split += 1
-    stats = f"Bot Statistics"
+    stats = "Bot Statistics"
     stats += f"""
+
 Bot Uptime: {currentTime}
 T-DN: {recv} | T-UP: {sent}
 CPU: {cpu}% | RAM: {mem}%
 Disk: {total} | Free: {free}
-Used: [{disk}%] is {used}
-Made with ❤️ by Sx
+Used: {used} [{disk}%]
+
+Made with ❤️ by SXrips
 """
     return stats
 dispatcher.add_handler(
-    CallbackQueryHandler(pop_up_stats, pattern="^" + str(THREE) + "$")
+    CallbackQueryHandler(pop_up_stats, pattern=f"^{str(THREE)}$")
 )
