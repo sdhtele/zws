@@ -103,4 +103,3 @@ def create_list(par, msg):
 
     if par.name != ".unwanted":
         msg[0] += "</ul>"
-\
