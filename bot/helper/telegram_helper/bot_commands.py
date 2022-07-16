@@ -43,6 +43,7 @@ class _BotCommands:
         self.LeechWatchCommand = f'lew{CMD_INDEX}'
         self.LeechZipWatchCommand = f'leechzipw{CMD_INDEX}'
         self.RssListCommand = f'rsslist{CMD_INDEX}'
+        self.QbSelectCommand = f'qbsel{CMD_INDEX}'
         self.RssGetCommand = f'rssget{CMD_INDEX}'
         self.RssSubCommand = f'rsssub{CMD_INDEX}'
         self.RssUnSubCommand = f'rssunsub{CMD_INDEX}'
